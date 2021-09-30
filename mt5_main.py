@@ -33,15 +33,10 @@ local_exe = 'C:\\Users\\DParis\\AppData\\Roaming\\XM Global MT5\\terminal64.exe'
 
 # account number *** USE YOURS INSTEAD ***
 mt5_acc = 5401675
-mt5_acc = 5400939
-mt5_acc = 5400354
-
 
 # account Password Traders/Investors *** USE YOURS INSTEAD ***
 # mt5_trd_pas = "n2eunlnt" 
 mt5_inv_pas = "vdGVQp8v"
-mt5_inv_pas = "WZV6adcf"
-mt5_inv_pas = "oIJ6LfYt"
 
 # try initialization and login
 mt5_client = fn.f_init_login(param_acc=mt5_acc, param_pass=mt5_inv_pas, param_exe=local_exe)
