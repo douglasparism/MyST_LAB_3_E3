@@ -10,9 +10,7 @@
 """
 
 # -- import libraries
-import pandas as pd
 import datetime
-
 # -- import project scripts
 import functions as fn
 
@@ -27,50 +25,49 @@ import functions as fn
 # 1. Open locally MetaTrader5 Desktop App
 # 2. Check everything is working fine and the connection to the account is ok
 # 3. Run the following
+def get_mt5_df(local_exe,mt5_acc,mt5_inv_pas):
+    # local direction of executable file
 
-# local direction of executable file
-local_exe = 'C:\\Users\\DParis\\AppData\\Roaming\\XM Global MT5\\terminal64.exe'
+    # account number *** USE YOURS INSTEAD ***
 
-# account number *** USE YOURS INSTEAD ***
-mt5_acc = 5401675
+    # account Password Traders/Investors *** USE YOURS INSTEAD ***
+    # mt5_trd_pas = "n2eunlnt"
 
-# account Password Traders/Investors *** USE YOURS INSTEAD ***
-# mt5_trd_pas = "n2eunlnt" 
-mt5_inv_pas = "vdGVQp8v"
+    # try initialization and login
+    mt5_client = fn.f_init_login(param_acc=mt5_acc, param_pass=mt5_inv_pas, param_exe=local_exe)
 
-# try initialization and login
-mt5_client = fn.f_init_login(param_acc=mt5_acc, param_pass=mt5_inv_pas, param_exe=local_exe)
+    # -- -------------------------------------------------------------------------------------- ACCOUNT INFO -- #
 
-# -- -------------------------------------------------------------------------------------- ACCOUNT INFO -- # 
+    # get the account info of the already initialized mt5 client
+    df_acc_info = fn.f_acc_info(param_ct=mt5_client)
 
-# get the account info of the already initialized mt5 client
-df_acc_info = fn.f_acc_info(param_ct=mt5_client)
+    # ---------------------------------------------------------------------- HISTORICAL ACCOUNT ORDERS/DEALS -- #
 
-# ---------------------------------------------------------------------- HISTORICAL ACCOUNT ORDERS/DEALS -- # 
+    # construct a datetime that is explicitly aware of the difference
+    ini_date = datetime.datetime(2011, 2, 1, 0, 0)
+    end_date = datetime.datetime(2021, 9, 26, 0, 0)
 
-# construct a datetime that is explicitly aware of the difference 
-ini_date = datetime.datetime(2011, 2, 1, 0, 0)
-end_date = datetime.datetime(2021, 9, 26, 0, 0)
+    # get historical prices
+    df_hist = fn.f_hist_trades(param_ct=mt5_client, param_ini=ini_date, param_end=end_date)
 
-# get historical prices
-df_hist = fn.f_hist_trades(param_ct=mt5_client, param_ini=ini_date, param_end=end_date)
+    # ------------------------------------------------------------------------------------ HISTORICAL PRICES -- #
 
-# ------------------------------------------------------------------------------------ HISTORICAL PRICES -- # 
+    # get the historical trades of the account (using orders + deals info)
 
-# get the historical trades of the account (using orders + deals info)
+    # construct init time from the OpenTime - minute of the first trade
+    ini_date = df_hist['OpenTime'].iloc[0] - datetime.timedelta(minutes=76288)
+    # construct init time from the OpenTime + minute of the last trade
+    end_date = df_hist['CloseTime'].iloc[-1] + datetime.timedelta(minutes=1)
+    # get all the symbols traded in order to download prices for all of them
+    symbols = list(df_hist['Symbol'].unique())
 
-# construct init time from the OpenTime - minute of the first trade
-ini_date = df_hist['OpenTime'].iloc[0] - datetime.timedelta(minutes=76288)
-# construct init time from the OpenTime + minute of the last trade
-end_date = df_hist['CloseTime'].iloc[-1] + datetime.timedelta(minutes=1)
-# get all the symbols traded in order to download prices for all of them
-symbols = list(df_hist['Symbol'].unique())
+    # get historical prices using UTC time
+    df_prices = fn.f_hist_prices(param_ct=mt5_client, param_sym=symbols, param_tf='M1',
+                                 param_ini=ini_date, param_end=end_date)
 
-# get historical prices using UTC time
-df_prices = fn.f_hist_prices(param_ct=mt5_client, param_sym=symbols, param_tf='M1',
-                             param_ini=ini_date, param_end=end_date)
+    # in case a timeshift is necessary to re-express the time column for local use
+    # diff_here_server = 8
+    # in case of the need to display times in local timezone (your computer)
+    # df_prices['time'] = df_prices['time'] + pd.Timedelta(hours=diff_here_server)
 
-# in case a timeshift is necessary to re-express the time column for local use
-# diff_here_server = 8
-# in case of the need to display times in local timezone (your computer)
-# df_prices['time'] = df_prices['time'] + pd.Timedelta(hours=diff_here_server)
+    return df_prices,df_hist
