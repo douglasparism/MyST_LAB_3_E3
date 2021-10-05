@@ -12,10 +12,11 @@
 import pandas as pd
 import numpy as np
 import datetime
-from datetime import timedelta
-
+from typing import Dict
+import sys
 # data and processing
-import MetaTrader5 as mt5
+if sys.platform not in ["darwin", "linux"]:
+    import MetaTrader5 as mt5
 
 
 # -------------------------------------------------------------------------- MT5: INITIALIZATION / LOGIN -- #
@@ -288,3 +289,141 @@ def f_hist_prices(param_ct, param_sym, param_tf, param_ini, param_end):
     # return historical prices
     return d_prices
 
+# PARTE 1
+
+
+def f_leer_archivo(param_archivo: str,
+                   param_estudiante: int,
+                   param_lib: bool = False,
+                   param_cred: Dict = {}) -> pd.DataFrame:
+    if param_lib:
+        return ...
+    ext = param_archivo.split('.')[-1]
+    if ext == 'csv':
+        tem = pd.read_csv(param_archivo)
+    elif ext in ['xls', 'xlsx']:
+        tem = pd.read_excel(param_archivo)
+    else:
+        raise TypeError('Valid file types are `csv`, `xls` or `xlsx`.')
+    tem.closetime = pd.to_datetime(tem.closetime)
+    tem.opentime = pd.to_datetime(tem.opentime)
+    return tem
+
+
+def f_pip_size(params_ins: str) -> int:
+    inst_pips = pd.read_csv('./files/instruments_pips.csv')
+    inst_pips.Instrument = inst_pips.Instrument.map(lambda x: "".join(x.split("_")))
+    ins = inst_pips[inst_pips['Instrument'] == params_ins]
+    if len(ins) == 0:
+        return 100
+    return int(1 / float(ins['TickSize']))
+
+
+def f_columnas_tiempos(param_data: pd.DataFrame) -> pd.DataFrame:
+    param_data['tiempo'] = (param_data['closetime'] - param_data['opentime'])\
+        .map(lambda x: x.total_seconds())
+    return param_data
+
+
+def f_columnas_pips(param_data: pd.DataFrame) -> pd.DataFrame:
+    mults = param_data.loc[:, 'mult'].astype(int)
+    close = param_data.loc[:, 'closeprice'].astype(float)
+    opn = param_data.loc[:, 'openprice'].astype(float)
+    type = param_data.loc[:, 'type']
+
+    temp = pd.DataFrame({
+        'type': type,
+        'mult': mults,
+        'open': opn,
+        'close': close
+    })
+
+    pipSeries = temp.apply(
+        lambda x: (x[3] - x[2]) * x[1] if x[0] == 'buy'
+        else (x[2] - x[3]) * x[1], 1
+    )
+
+    pips_acm = pipSeries.cumsum()
+    profit_acm = param_data.loc[:, 'profit'].cumsum()
+    param_data['pips'] = pipSeries
+    param_data['pips_acm'] = pips_acm
+    param_data['profit_acm'] = profit_acm
+    return param_data
+
+
+def f_estadisticas_ba(param_data: pd.DataFrame) -> Dict:
+    medida = [
+        'Ops totales',
+        'Ganadoras',
+        'Ganadoras_c',
+        'Ganadoras_v',
+        'Perdedoras',
+        'Perdedoras_c',
+        'Perdedoras_v',
+        'Mediana (Profit)',
+        'Mediana (Pips)',
+        'r_efectividad',
+        'r_proporcion',
+        'r_efectividad_c',
+        'r_efectividad_v'
+    ]
+
+    desc = [
+        'Operaciones totales',
+        'Operaciones ganadoras',
+        'Operaciones ganadoras de compra',
+        'Operaciones ganadoras de venta',
+        'Operaciones eprdedoras',
+        'Operaciones perdedoras de compra',
+        'Operaciones eprdedoras de venta',
+        'Mediana de profit de operaciones',
+        'Mediana de pips de operaciones',
+        'Ganadoras Totales/Operaciones Totales',
+        'Ganadoras Totales/Perdedoras Totales',
+        'Ganadoras Compras/Operaciones Totales',
+        'Ganadoras Ventas / Operaciones Totales'
+    ]
+
+    valor = [
+        len(param_data),
+        len(param_data[param_data['profit'] > 0]),
+        len(param_data[(param_data['profit'] > 0) &
+            (param_data['type'] == 'buy')]),
+        len(param_data[(param_data['profit'] > 0) &
+            (param_data['type'] == 'sell')]),
+        len(param_data[param_data['profit'] < 0]),
+        len(param_data[(param_data['profit'] < 0) &
+            (param_data['type'] == 'buy')]),
+        len(param_data[(param_data['profit'] < 0) &
+            (param_data['type'] == 'sell')]),
+        param_data['profit'].mean(),
+        param_data['pips'].mean(),
+        len(param_data[param_data['profit'] > 0]) / len(param_data),
+        len(param_data[param_data['profit'] > 0]) /
+        len(param_data[param_data['profit'] < 0]),
+        len(param_data[(param_data['profit'] > 0) &
+            (param_data['type'] == 'buy')]) / len(param_data),
+        len(param_data[(param_data['profit'] > 0) &
+            (param_data['type'] == 'sell')]) / len(param_data),
+    ]
+
+    df1 = pd.DataFrame(
+        {
+            'medida': medida,
+            'valor': valor,
+            'descripcion': desc
+        }
+    )
+
+    tmp = param_data.loc[:, ['symbol', 'profit']]
+    tmp["rank"] = tmp.profit.map(lambda x: 1 if x > 0 else 0)
+    df2 = tmp.loc[:, ['symbol', 'rank']].groupby('symbol').sum() /\
+        tmp.loc[:, ['symbol', 'rank']].groupby('symbol').count()
+    df2 = df2.reset_index()
+    print(df2)
+    df2["rank"] = df2["rank"].map(lambda x: f'{x*100:.2f}%')
+
+    return {
+        'df_1_tabla': df1,
+        'df_2_ranking': df2
+    }
