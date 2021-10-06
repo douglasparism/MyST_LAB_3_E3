@@ -12,6 +12,7 @@
 import pandas as pd
 import numpy as np
 import datetime
+from datetime import timedelta
 from typing import Dict
 import sys
 # data and processing
@@ -427,3 +428,18 @@ def f_estadisticas_ba(param_data: pd.DataFrame) -> Dict:
         'df_1_tabla': df1,
         'df_2_ranking': df2
     }
+
+def f_evolucion_capital(cap_ini,operaciones):
+    start_date = operaciones.opentime.min().replace(hour=23, minute=59, second=59)
+    end_date = operaciones.closetime.max()
+    timestamp = [start_date + timedelta(n) for n in range(int((end_date - start_date).days)+2)]
+
+    profit_acm = [operaciones[operaciones.closetime <= i].profit.sum() for i in timestamp]
+    profit_acm_d = [i+cap_ini for i in profit_acm]
+    profit_d = [0] + [profit_acm[i] - profit_acm[i - 1] for i in range(1, len(profit_acm))]
+
+    parte_2_df = pd.DataFrame(timestamp)
+    parte_2_df["profit_d"] = profit_d
+    parte_2_df["profit_acm_d"] = profit_acm_d
+
+    return parte_2_df

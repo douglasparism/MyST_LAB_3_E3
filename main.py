@@ -14,6 +14,7 @@ if sys.platform not in ["linux", "darwin"]:
     import mt5_main as mt5_lib
 
 
+
 # doug_acc_dic = {"local_exe":'C:\\Users\\DParis\\AppData\\Roaming\\XM Global MT5\\terminal64.exe'}
 # doug_acc_dic["mt5_acc"] = 5401675
 # doug_acc_dic["mt5_inv_pas"] = "vdGVQp8v"
@@ -24,4 +25,6 @@ data_ap = fn.f_leer_archivo('./files/History5400732.xlsx', 1)
 data_ap = fn.f_columnas_tiempos(data_ap)
 data_ap["mult"] = data_ap.symbol.map(lambda x: fn.f_pip_size(x))
 data_ap = fn.f_columnas_pips(data_ap)
-print(fn.f_estadisticas_ba(data_ap))
+parte_1 = fn.f_estadisticas_ba(data_ap)
+
+parte_2 = fn.f_evolucion_capital(cap_ini = 100000, operaciones = data_ap.copy())
