@@ -15,6 +15,7 @@ import datetime
 from datetime import timedelta
 from typing import Dict
 import sys
+import yfinance
 # data and processing
 if sys.platform not in ["darwin", "linux"]:
     import MetaTrader5 as mt5
@@ -441,5 +442,87 @@ def f_evolucion_capital(cap_ini,operaciones):
     parte_2_df = pd.DataFrame(timestamp)
     parte_2_df["profit_d"] = profit_d
     parte_2_df["profit_acm_d"] = profit_acm_d
-
+    parte_2_df.rename(columns={parte_2_df.columns[0]: "timestamp"}, inplace=True)
     return parte_2_df
+
+
+def SR_orig(parte_2, rf):
+    rends = np.log(parte_2['profit_acm_d'] / parte_2['profit_acm_d'].shift(1)).dropna()
+    rp = rends.mean()
+    sdp = rends.std(ddof=1)*np.sqrt(252)
+    return (rp-rf)/sdp
+
+
+def SR_actualizado(parte_2, benchmark_ticker):
+    bnchmrk = yfinance.download(benchmark_ticker, start=str(parte_2['timestamp'][0].date()),
+                                end=str(parte_2['timestamp'][len(parte_2) - 1].date() + timedelta(days=1)))
+
+    rends = np.log(parte_2['profit_acm_d'] / parte_2['profit_acm_d'].shift(1)).dropna()
+    rends_bnchmrk = np.log(bnchmrk['Adj Close'] / bnchmrk['Adj Close'].shift(1)).dropna()
+    diff = rends.values - rends_bnchmrk.values
+    sdp = diff.std(ddof=1) * np.sqrt(252)
+    r_trader = rends.mean() * 252
+    r_benchmark = rends_bnchmrk.mean() * 252
+    return (r_trader - r_benchmark) / sdp
+
+def drawdown(parte_2):
+    xs = parte_2['profit_acm_d']
+    dw = np.maximum.accumulate(xs) - xs
+    if np.sum(dw) > 0:
+        i = np.argmax(dw)
+        j = np.argmax(xs[:i])
+        drawdown = (parte_2.loc[i]['profit_acm_d'] - parte_2.loc[j]['profit_acm_d']) / parte_2.loc[j]['profit_acm_d']
+
+    else:
+        i = 0
+        j = 0
+        drawdown = 0
+
+    ini_date = parte_2.loc[j]['timestamp']
+    end_date = parte_2.loc[i]['timestamp']
+
+    capital = drawdown * parte_2.loc[j]['profit_acm_d']
+    return drawdown, capital, ini_date, end_date
+
+
+def drawup(parte_2):
+    xs = parte_2['profit_acm_d']
+    dw = np.maximum.accumulate(xs)
+    if np.sum(dw) > 0:
+        i = np.argmax(dw)
+        j = np.argmin(xs[:i])  # start of period
+        drawup = (parte_2.loc[i]['profit_acm_d'] - parte_2.loc[j]['profit_acm_d']) / parte_2.loc[j]['profit_acm_d']
+
+    else:
+        i = 0
+        j = 0
+        drawup = 0
+
+    ini_date = parte_2.loc[j]['timestamp']
+    end_date = parte_2.loc[i]['timestamp']
+
+    capital = drawup * parte_2.loc[j]['profit_acm_d']
+    return drawup, capital, ini_date, end_date
+
+
+def f_estadisticas_mad(parte_2_1, rf, benchmark_ticker):
+    metrica = ["sharpe_original", "sharpe_actualizado", "drawdown_capi", "drawdown_capi", "drawdown_capi",
+               "drawup_capi", "drawup_capi", "drawup_capi"]
+    formato = ['Cantidad', 'Cantidad', 'Fecha Inicial', 'Fecha Final', 'DrawDown $ (capital)', 'Fecha Inicial',
+               'Fecha Final', 'DrawUp $ (capital)']
+    descripcion = ['Sharpe Ratio Fórmula Original', 'Sharpe Ratio Fórmula Ajustada',
+                   'Fecha inicial del DrawDown de Capital', 'Fecha final del DrawDown de Capital',
+                   'Máxima pérdida flotante registrada', 'Fecha inicial del DrawUp de Capital',
+                   'Fecha final del DrawUp de Capital', 'Máxima ganancia flotante registrada']
+    drawup_, capital_up, ini_date_up, end_date_up = drawup(parte_2_1)
+    drawdown_, capital_down, ini_date_down, end_date_down = drawdown(parte_2_1)
+
+    valor = [SR_orig(parte_2_1, rf), SR_actualizado(parte_2_1, benchmark_ticker),
+             ini_date_down, end_date_down, capital_down, ini_date_up, end_date_up, capital_up]
+
+    estadisticas_mad_df = pd.DataFrame(metrica)
+    estadisticas_mad_df["formato"] = formato
+    estadisticas_mad_df["valor"] = valor
+    estadisticas_mad_df["descripcion"] = descripcion
+
+    return estadisticas_mad_df

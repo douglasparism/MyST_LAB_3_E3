@@ -58,3 +58,6 @@ traitlets==5.1.0
 urllib3==1.26.6
 wcwidth==0.2.5
 wrapt==1.12.1
+
+yfinance~=0.1.63
+MetaTrader5~=5.0.34
