@@ -307,8 +307,8 @@ def f_leer_archivo(param_archivo: str,
         tem = pd.read_excel(param_archivo)
     else:
         raise TypeError('Valid file types are `csv`, `xls` or `xlsx`.')
-    tem.closetime = pd.to_datetime(tem.closetime)
-    tem.opentime = pd.to_datetime(tem.opentime)
+    tem['CloseTime'] = pd.to_datetime(tem['CloseTime'])
+    tem['OpenTime'] = pd.to_datetime(tem['OpenTime'])
     return tem
 
 
@@ -322,16 +322,16 @@ def f_pip_size(params_ins: str) -> int:
 
 
 def f_columnas_tiempos(param_data: pd.DataFrame) -> pd.DataFrame:
-    param_data['tiempo'] = (param_data['closetime'] - param_data['opentime'])\
+    param_data['tiempo'] = (param_data['CloseTime'] - param_data['OpenTime'])\
         .map(lambda x: x.total_seconds())
     return param_data
 
 
 def f_columnas_pips(param_data: pd.DataFrame) -> pd.DataFrame:
     mults = param_data.loc[:, 'mult'].astype(int)
-    close = param_data.loc[:, 'closeprice'].astype(float)
-    opn = param_data.loc[:, 'openprice'].astype(float)
-    type = param_data.loc[:, 'type']
+    close = param_data.loc[:, 'ClosePrice'].astype(float)
+    opn = param_data.loc[:, 'OpenPrice'].astype(float)
+    type = param_data.loc[:, 'Type']
 
     temp = pd.DataFrame({
         'type': type,
@@ -341,12 +341,12 @@ def f_columnas_pips(param_data: pd.DataFrame) -> pd.DataFrame:
     })
 
     pipSeries = temp.apply(
-        lambda x: (x[3] - x[2]) * x[1] if x[0] == 'buy'
+        lambda x: (x[3] - x[2]) * x[1] if x[0] == 'buy' # aqui debo poner 0?
         else (x[2] - x[3]) * x[1], 1
     )
 
     pips_acm = pipSeries.cumsum()
-    profit_acm = param_data.loc[:, 'profit'].cumsum()
+    profit_acm = param_data.loc[:, 'Profit'].cumsum()
     param_data['pips'] = pipSeries
     param_data['pips_acm'] = pips_acm
     param_data['profit_acm'] = profit_acm
@@ -388,25 +388,25 @@ def f_estadisticas_ba(param_data: pd.DataFrame) -> Dict:
 
     valor = [
         len(param_data),
-        len(param_data[param_data['profit'] > 0]),
-        len(param_data[(param_data['profit'] > 0) &
-            (param_data['type'] == 'buy')]),
-        len(param_data[(param_data['profit'] > 0) &
-            (param_data['type'] == 'sell')]),
-        len(param_data[param_data['profit'] < 0]),
-        len(param_data[(param_data['profit'] < 0) &
-            (param_data['type'] == 'buy')]),
-        len(param_data[(param_data['profit'] < 0) &
-            (param_data['type'] == 'sell')]),
-        param_data['profit'].mean(),
+        len(param_data[param_data['Profit'] > 0]),
+        len(param_data[(param_data['Profit'] > 0) &
+            (param_data['Type'] == '0')]),
+        len(param_data[(param_data['Profit'] > 0) &
+            (param_data['Type'] == '1')]),
+        len(param_data[param_data['Profit'] < 0]),
+        len(param_data[(param_data['Profit'] < 0) &
+            (param_data['Type'] == '0')]),
+        len(param_data[(param_data['Profit'] < 0) &
+            (param_data['Type'] == '0')]),
+        param_data['Profit'].mean(),
         param_data['pips'].mean(),
-        len(param_data[param_data['profit'] > 0]) / len(param_data),
-        len(param_data[param_data['profit'] > 0]) /
-        len(param_data[param_data['profit'] < 0]),
-        len(param_data[(param_data['profit'] > 0) &
-            (param_data['type'] == 'buy')]) / len(param_data),
-        len(param_data[(param_data['profit'] > 0) &
-            (param_data['type'] == 'sell')]) / len(param_data),
+        len(param_data[param_data['Profit'] > 0]) / len(param_data),
+        len(param_data[param_data['Profit'] > 0]) /
+        len(param_data[param_data['Profit'] < 0]),
+        len(param_data[(param_data['Profit'] > 0) &
+            (param_data['Type'] == '0')]) / len(param_data),
+        len(param_data[(param_data['Profit'] > 0) &
+            (param_data['Type'] == '1')]) / len(param_data),
     ]
 
     df1 = pd.DataFrame(
@@ -417,12 +417,11 @@ def f_estadisticas_ba(param_data: pd.DataFrame) -> Dict:
         }
     )
 
-    tmp = param_data.loc[:, ['symbol', 'profit']]
-    tmp["rank"] = tmp.profit.map(lambda x: 1 if x > 0 else 0)
-    df2 = tmp.loc[:, ['symbol', 'rank']].groupby('symbol').sum() /\
-        tmp.loc[:, ['symbol', 'rank']].groupby('symbol').count()
+    tmp = param_data.loc[:, ['Symbol', 'Profit']]
+    tmp["rank"] = tmp.Profit.map(lambda x: 1 if x > 0 else 0)
+    df2 = tmp.loc[:, ['Symbol', 'rank']].groupby('Symbol').sum() /\
+        tmp.loc[:, ['Symbol', 'rank']].groupby('Symbol').count()
     df2 = df2.reset_index()
-    print(df2)
     df2["rank"] = df2["rank"].map(lambda x: f'{x*100:.2f}%')
 
     return {
@@ -431,11 +430,11 @@ def f_estadisticas_ba(param_data: pd.DataFrame) -> Dict:
     }
 
 def f_evolucion_capital(cap_ini,operaciones):
-    start_date = operaciones.opentime.min().replace(hour=23, minute=59, second=59)
-    end_date = operaciones.closetime.max()
+    start_date = operaciones.OpenTime.min().replace(hour=23, minute=59, second=59)
+    end_date = operaciones.CloseTime.max()
     timestamp = [start_date + timedelta(n) for n in range(int((end_date - start_date).days)+2)]
 
-    profit_acm = [operaciones[operaciones.closetime <= i].profit.sum() for i in timestamp]
+    profit_acm = [operaciones[operaciones.CloseTime <= i].Profit.sum() for i in timestamp]
     profit_acm_d = [i+cap_ini for i in profit_acm]
     profit_d = [0] + [profit_acm[i] - profit_acm[i - 1] for i in range(1, len(profit_acm))]
 

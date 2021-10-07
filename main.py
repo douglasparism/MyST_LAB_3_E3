@@ -23,7 +23,7 @@ if sys.platform not in ["linux", "darwin"]:
 
 data_ap = fn.f_leer_archivo('./files/History5400732.xlsx', 1)
 data_ap = fn.f_columnas_tiempos(data_ap)
-data_ap["mult"] = data_ap.symbol.map(lambda x: fn.f_pip_size(x))
+data_ap["mult"] = data_ap.Symbol.map(lambda x: fn.f_pip_size(x))
 data_ap = fn.f_columnas_pips(data_ap)
 parte_1 = fn.f_estadisticas_ba(data_ap)
 
