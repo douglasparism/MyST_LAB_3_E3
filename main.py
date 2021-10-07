@@ -21,7 +21,7 @@ if sys.platform not in ["linux", "darwin"]:
 # df_prices_doug,df_hist_doug = mt5_lib.get_mt5_df(doug_acc_dic["local_exe"],doug_acc_dic["mt5_acc"]
 #                                                  ,doug_acc_dic["mt5_inv_pas"])
 
-data_ap = fn.f_leer_archivo('./files/History5400732.xlsx', 1)
+
 data_ap = fn.f_columnas_tiempos(data_ap)
 data_ap["mult"] = data_ap.Symbol.map(lambda x: fn.f_pip_size(x))
 data_ap = fn.f_columnas_pips(data_ap)
