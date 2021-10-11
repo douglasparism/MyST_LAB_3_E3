@@ -10,22 +10,19 @@
 """
 import functions as fn
 import sys
+import data as dt
+
 if sys.platform not in ["linux", "darwin"]:
-    import mt5_main as mt5_lib
+    data_ini = dt.f_leer_archivo(param_estudiante=1, param_lib=True)
+if sys.platform in ["linux", "darwin"]:
+    data_ini = dt.f_leer_archivo(param_estudiante=2)
 
 
-
-# doug_acc_dic = {"local_exe":'C:\\Users\\DParis\\AppData\\Roaming\\XM Global MT5\\terminal64.exe'}
-# doug_acc_dic["mt5_acc"] = 5401675
-# doug_acc_dic["mt5_inv_pas"] = "vdGVQp8v"
-# df_prices_doug,df_hist_doug = mt5_lib.get_mt5_df(doug_acc_dic["local_exe"],doug_acc_dic["mt5_acc"]
-#                                                  ,doug_acc_dic["mt5_inv_pas"])
-
-
-data_ap = fn.f_columnas_tiempos(data_ap)
+data_ap = fn.f_columnas_tiempos(data_ini)
 data_ap["mult"] = data_ap.Symbol.map(lambda x: fn.f_pip_size(x))
 data_ap = fn.f_columnas_pips(data_ap)
 parte_1 = fn.f_estadisticas_ba(data_ap)
 
 parte_2_1 = fn.f_evolucion_capital(cap_ini = 100000, operaciones = data_ap.copy())
+
 parte_2_2 = fn.f_estadisticas_mad(parte_2_1, rf=0.05, benchmark_ticker = "^GSPC")

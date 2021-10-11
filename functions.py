@@ -294,24 +294,6 @@ def f_hist_prices(param_ct, param_sym, param_tf, param_ini, param_end):
 # PARTE 1
 
 
-def f_leer_archivo(param_archivo: str,
-                   param_estudiante: int,
-                   param_lib: bool = False,
-                   param_cred: Dict = {}) -> pd.DataFrame:
-    if param_lib:
-        return ...
-    ext = param_archivo.split('.')[-1]
-    if ext == 'csv':
-        tem = pd.read_csv(param_archivo)
-    elif ext in ['xls', 'xlsx']:
-        tem = pd.read_excel(param_archivo)
-    else:
-        raise TypeError('Valid file types are `csv`, `xls` or `xlsx`.')
-    tem['CloseTime'] = pd.to_datetime(tem['CloseTime'])
-    tem['OpenTime'] = pd.to_datetime(tem['OpenTime'])
-    return tem
-
-
 def f_pip_size(params_ins: str) -> int:
     inst_pips = pd.read_csv('./files/instruments_pips.csv')
     inst_pips.Instrument = inst_pips.Instrument.map(lambda x: "".join(x.split("_")))
@@ -437,6 +419,7 @@ def f_evolucion_capital(cap_ini,operaciones):
     profit_acm = [operaciones[operaciones.CloseTime <= i].Profit.sum() for i in timestamp]
     profit_acm_d = [i+cap_ini for i in profit_acm]
     profit_d = [0] + [profit_acm[i] - profit_acm[i - 1] for i in range(1, len(profit_acm))]
+    profit_d[0] = profit_acm_d[0] - cap_ini
 
     parte_2_df = pd.DataFrame(timestamp)
     parte_2_df["profit_d"] = profit_d
