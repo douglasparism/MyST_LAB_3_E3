@@ -521,3 +521,18 @@ def f_estadisticas_mad(parte_2_1, rf, benchmark_ticker):
     estadisticas_mad_df["descripcion"] = descripcion
 
     return estadisticas_mad_df
+
+
+def get_mt5_prices(local_exe, mt5_acc, mt5_inv_pas,
+                   symbols, start_time, end_time):
+    mt5_client = f_init_login(param_acc=mt5_acc,
+                              param_pass=mt5_inv_pas,
+                              param_exe=local_exe)
+
+    # get historical prices using UTC time
+    df_prices = f_hist_prices(param_ct=mt5_client,
+                              param_sym=symbols,
+                              param_tf='M1',
+                              param_ini=start_time, param_end=end_time)
+
+    return df_prices
