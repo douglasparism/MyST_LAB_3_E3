@@ -523,16 +523,49 @@ def f_estadisticas_mad(parte_2_1, rf, benchmark_ticker):
     return estadisticas_mad_df
 
 
-def get_mt5_prices(local_exe, mt5_acc, mt5_inv_pas,
-                   symbols, start_time, end_time):
+def get_mt5_prices(symbols, start_time, end_time,
+                   local_exe = 'C:\\Users\\DParis\\AppData\\Roaming\\XM Global MT5\\terminal64.exe',
+                   mt5_acc = 5401675, mt5_inv_pas = "vdGVQp8v"):
+
     mt5_client = f_init_login(param_acc=mt5_acc,
                               param_pass=mt5_inv_pas,
                               param_exe=local_exe)
+
+    end_date = end_time + datetime.timedelta(hours=23)
+    ini_date = start_time - datetime.timedelta(hours=23)
 
     # get historical prices using UTC time
     df_prices = f_hist_prices(param_ct=mt5_client,
                               param_sym=symbols,
                               param_tf='M1',
-                              param_ini=start_time, param_end=end_time)
+                              param_ini=ini_date, param_end=end_date)
 
     return df_prices
+
+
+def f_be_de_p1(param_data):
+
+    winners = param_data.copy()[param_data.Profit > 0]
+    winners = winners.reset_index(drop=True)
+    winners["Ratio"] = winners["Profit"] / abs(winners["profit_acm"])
+
+    n_occ = []
+    occu = []
+    for i in winners.index:
+        df = param_data.copy()[(param_data.OpenTime <= winners["CloseTime"][i]) &
+                        (param_data.CloseTime > winners["CloseTime"][i])]
+
+        df['CTime_Anchor'] = pd.Timestamp(winners['CloseTime'][i])
+        occu.append(df)
+        n_occ.append(len(df))
+    occu_df = pd.concat(occu, ignore_index=True)
+
+    prices_df = get_mt5_prices(symbols=occu_df.Symbol.tolist(),
+                               start_time=occu_df.CTime_Anchor.min(),
+                               end_time=occu_df.CTime_Anchor.max())
+
+    prices_filtered = [prices_df[occu_df.Symbol[i]][prices_df[occu_df.Symbol[i]].time == occu_df.CTime_Anchor[i].replace(second=0)]["close"].values for i in occu_df.index]
+    occu_df["Price_CTime_Anchor"] = np.column_stack(prices_filtered).ravel()
+    occu_df["P&L_CTime_Anchor"] = (occu_df.OpenPrice - occu_df.Price_CTime_Anchor) * occu_df.Volume
+
+    return occu_df, n_occ, winners
