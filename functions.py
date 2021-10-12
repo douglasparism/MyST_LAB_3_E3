@@ -543,7 +543,7 @@ def get_mt5_prices(symbols, start_time, end_time,
     return df_prices
 
 
-def f_be_de_p1(param_data):
+def f_be_de(param_data):
 
     winners = param_data.copy()[param_data.Profit > 0]
     winners = winners.reset_index(drop=True)
@@ -559,13 +559,79 @@ def f_be_de_p1(param_data):
         occu.append(df)
         n_occ.append(len(df))
     occu_df = pd.concat(occu, ignore_index=True)
-
     prices_df = get_mt5_prices(symbols=occu_df.Symbol.tolist(),
                                start_time=occu_df.CTime_Anchor.min(),
                                end_time=occu_df.CTime_Anchor.max())
 
     prices_filtered = [prices_df[occu_df.Symbol[i]][prices_df[occu_df.Symbol[i]].time == occu_df.CTime_Anchor[i].replace(second=0)]["close"].values for i in occu_df.index]
-    occu_df["Price_CTime_Anchor"] = np.column_stack(prices_filtered).ravel()
-    occu_df["P&L_CTime_Anchor"] = (occu_df.OpenPrice - occu_df.Price_CTime_Anchor) * occu_df.Volume
+    if len(prices_filtered)<1:
+        print("sin ocurrencias")
+    else:
+        occu_df["Price_CTime_Anchor"] = np.column_stack(prices_filtered).ravel()
+        occu_df["P&L_CTime_Anchor"] = (occu_df.OpenPrice - occu_df.Price_CTime_Anchor) * occu_df.Volume
 
-    return occu_df, n_occ, winners
+        final_dict = {'ocurrencias': {'Cantidad': len(occu_df)}}
+        s_quo = []
+        a_perdida = []
+        for i in occu_df.index:
+            inst = winners[winners['CloseTime'] == occu_df['CTime_Anchor'][i]]
+            final_dict['ocurrencias'][f'ocurrencia_{i + 1}'] = {'timestamp': occu_df['CTime_Anchor'][i],
+                                                                'operaciones': {
+                                                                    'ganadoras': {'instrumento': inst['Symbol'].iloc[0],
+                                                                                  'volumen': inst['Volume'].iloc[0],
+                                                                                  'sentido': "buy" if inst['Type'].iloc[0] == 0 else "sell",
+                                                                                  'profit_ganadora': round(
+                                                                                      inst['Profit'].iloc[0],
+                                                                                      2)},
+                                                                    'perdedoras': {'instrumento': occu_df['Symbol'][i],
+                                                                                   'volumen': occu_df['Volume'][i],
+                                                                                   'sentido': "buy" if inst['Type'].iloc[0] == 0 else "sell",
+                                                                                   'profit_perdedora': round(
+                                                                                       occu_df['P&L_CTime_Anchor'][i], 2)}
+                                                                },
+                                                                'ratio_cp_profit_acm': round(
+                                                                    abs(occu_df['P&L_CTime_Anchor'][i] /
+                                                                        inst['profit_acm'].iloc[0]),
+                                                                    2),
+                                                                'ratio_cg_profit_acm': round(
+                                                                    abs(inst['Profit'].iloc[0] / inst['profit_acm'].iloc[
+                                                                        0]), 2),
+                                                                'ratio_cp_cg': round(
+                                                                    abs(occu_df['P&L_CTime_Anchor'][i] /
+                                                                        inst['Profit'].iloc[0]), 2)
+                                                                }
+
+            if abs(occu_df['P&L_CTime_Anchor'][i] / inst['profit_acm'].iloc[0]) < abs(
+                    inst['Profit'].iloc[0] / inst['profit_acm'].iloc[0]):
+                s_quo.append(1)
+            else:
+                s_quo.append(0)
+
+            if abs(occu_df['P&L_CTime_Anchor'][i] / inst['Profit'].iloc[0]) > 2:
+                a_perdida.append(1)
+            else:
+                a_perdida.append(0)
+
+        def cond1():
+            return winners['profit_acm'].iloc[0] < winners['profit_acm'].iloc[-1]
+
+        def cond2():
+            return winners['Profit'].iloc[-1] > winners['Profit'].iloc[0] and occu_df['P&L_CTime_Anchor'].iloc[-1] > \
+                   occu_df['P&L_CTime_Anchor'].iloc[0]
+
+        def cond3():
+            return final_dict['ocurrencias'][f'ocurrencia_{max(len(occu_df)-1,1)}']['ratio_cp_cg'] > 2
+
+        if (cond1() and cond2()) or (cond3() and cond2()) or (cond3() and cond1()):
+            sensibilidad_dec = 'Si'
+        else:
+            sensibilidad_dec = 'No'
+
+        final_dict['resultados'] = {
+            'dataframe': pd.DataFrame({'ocurrencias': len(occu_df),
+                                       'status_quo': str(round(100 * np.array(s_quo).mean(), 2)) + '%',
+                                       'aversion_perdida': str(round(100 * np.array(a_perdida).mean(), 2)) + '%',
+                                       'sensibilidad_decreciente': [sensibilidad_dec]})
+        }
+
+        return final_dict

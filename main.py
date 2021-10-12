@@ -8,11 +8,9 @@
 # -- repository: YOUR REPOSITORY URL                                      -- #
 # -- -------------------------------------------------------------------- -- #
 """
-from numpy import unique
 import functions as fn
 import sys
 import data as dt
-import mt5_main
 import datetime
 
 if sys.platform not in ["linux", "darwin"]:
@@ -23,22 +21,17 @@ else:
 data_ini_2 = dt.f_leer_archivo(param_estudiante=2)
 data_ini_3 = dt.f_leer_archivo(param_estudiante=3)
 
-#borrar
-data_ini_1 = data_ini_3.copy()
-#borrar
 
 # DATOS DOUGLAS (Estudiante 2)
-data_dou = fn.f_columnas_tiempos(data_ini_1)
+data_dou = fn.f_columnas_tiempos(data_ini_3)
 data_dou["mult"] = data_dou.Symbol.map(lambda x: fn.f_pip_size(x))
 data_dou = fn.f_columnas_pips(data_dou)
 parte_1_dou = fn.f_estadisticas_ba(data_dou)
 
 parte_2_1_dou = fn.f_evolucion_capital(cap_ini=100000, operaciones=data_dou.copy())
-occu_df, n_occ, winners = fn.f_be_de_p1(data_dou)
-
+final_dict = fn.f_be_de(data_dou)
 parte_2_2_dou = fn.f_estadisticas_mad(parte_2_1_dou, rf=0.05, benchmark_ticker="^GSPC")
 
-# print(parte_2_2_dou)
 
 
 # DATOS ANA PAULA (Estudiante 2)
