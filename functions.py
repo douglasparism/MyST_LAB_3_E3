@@ -411,6 +411,7 @@ def f_estadisticas_ba(param_data: pd.DataFrame) -> Dict:
         'df_2_ranking': df2
     }
 
+
 def f_evolucion_capital(cap_ini,operaciones):
     start_date = operaciones.OpenTime.min().replace(hour=23, minute=59, second=59)
     end_date = operaciones.CloseTime.max()
@@ -441,11 +442,23 @@ def SR_actualizado(parte_2, benchmark_ticker):
 
     rends = np.log(parte_2['profit_acm_d'] / parte_2['profit_acm_d'].shift(1)).dropna()
     rends_bnchmrk = np.log(bnchmrk['Adj Close'] / bnchmrk['Adj Close'].shift(1)).dropna()
-    diff = rends.values - rends_bnchmrk.values
+    dates = parte_2.iloc[1:, 0].map(lambda x: str(x).split(' ')[0]).values
+    diff = rends.values.copy()
+    for r in range(len(rends.values)):
+        sp_dates = list(rends_bnchmrk.index.astype(str))
+        try:
+            i = sp_dates.index(dates[r])
+        except ValueError:
+            i = -1
+        if i != -1:
+            diff[r] = diff[r] - rends_bnchmrk.values[i]
+    #diff = rends.values - rends_bnchmrk.values
+
     sdp = diff.std(ddof=1) * np.sqrt(252)
     r_trader = rends.mean() * 252
     r_benchmark = rends_bnchmrk.mean() * 252
     return (r_trader - r_benchmark) / sdp
+
 
 def drawdown(parte_2):
     xs = parte_2['profit_acm_d']
@@ -496,8 +509,8 @@ def f_estadisticas_mad(parte_2_1, rf, benchmark_ticker):
                    'Fecha inicial del DrawDown de Capital', 'Fecha final del DrawDown de Capital',
                    'Máxima pérdida flotante registrada', 'Fecha inicial del DrawUp de Capital',
                    'Fecha final del DrawUp de Capital', 'Máxima ganancia flotante registrada']
-    drawup_, capital_up, ini_date_up, end_date_up = drawup(parte_2_1)
-    drawdown_, capital_down, ini_date_down, end_date_down = drawdown(parte_2_1)
+    _, capital_up, ini_date_up, end_date_up = drawup(parte_2_1)
+    _, capital_down, ini_date_down, end_date_down = drawdown(parte_2_1)
 
     valor = [SR_orig(parte_2_1, rf), SR_actualizado(parte_2_1, benchmark_ticker),
              ini_date_down, end_date_down, capital_down, ini_date_up, end_date_up, capital_up]
