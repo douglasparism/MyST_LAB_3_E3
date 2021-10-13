@@ -69,4 +69,5 @@ parte_2_2_jp = fn.f_estadisticas_mad(parte_2_1_jp, rf=0.05, benchmark_ticker="^G
 #final_dict_jp = fn.f_be_de(data_jp)
 
 # PARTE 4
+
 fig_ap = vs.pie_chart(parte_1_ap['df_2_ranking'])
