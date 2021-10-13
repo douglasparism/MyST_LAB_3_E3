@@ -12,6 +12,7 @@ import functions as fn
 import sys
 import data as dt
 import datetime
+import visualizations as vs
 
 #if sys.platform not in ["linux", "darwin"]:
 #    data_ini_1 = dt.f_leer_archivo(param_estudiante=1, param_lib=True)
@@ -28,9 +29,8 @@ data_dou = fn.f_columnas_pips(data_dou)
 parte_1_dou = fn.f_estadisticas_ba(data_dou)
 
 parte_2_1_dou = fn.f_evolucion_capital(cap_ini=100000, operaciones=data_dou.copy())
-final_dict = fn.f_be_de(data_dou,local_exe = 'C:\\Program Files\\MetaTrader 5\\terminal64.exe')
+#final_dict = fn.f_be_de(data_dou,local_exe = 'C:\\Program Files\\MetaTrader 5\\terminal64.exe')
 parte_2_2_dou = fn.f_estadisticas_mad(parte_2_1_dou, rf=0.05, benchmark_ticker="^GSPC")
-
 
 
 # DATOS ANA PAULA (Estudiante 2)
@@ -57,13 +57,16 @@ parte_2_2_jp = fn.f_estadisticas_mad(parte_2_1_jp, rf=0.05, benchmark_ticker="^G
 
 # PARTE 3
 # CARGAR PRECIOS HISTÓRICOS DE MT5
-unique_symbols = list(set(list(data_ini_1.loc[:, 'Symbol'].values) +
-                      list(data_ini_2.loc[:, 'Symbol'].values) +
-                      list(data_ini_3.loc[:, 'Symbol'].values)))
+#unique_symbols = list(set(list(data_ini_1.loc[:, 'Symbol'].values) +
+#                      list(data_ini_2.loc[:, 'Symbol'].values) +
+#                      list(data_ini_3.loc[:, 'Symbol'].values)))
 
 
-act_credentials = dt.equipo(1, lib=True)
+#act_credentials = dt.equipo(1, lib=True)
 
-final_dict_dou = fn.f_be_de(data_dou)
-final_dict_ap = fn.f_be_de(data_ap)
-final_dict_jp = fn.f_be_de(data_jp)
+#final_dict_dou = fn.f_be_de(data_dou)
+#final_dict_ap = fn.f_be_de(data_ap)
+#final_dict_jp = fn.f_be_de(data_jp)
+
+# PARTE 4
+fig_ap = vs.pie_chart(parte_1_ap['df_2_ranking'])

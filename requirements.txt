@@ -61,3 +61,4 @@ wrapt==1.12.1
 
 yfinance~=0.1.63
 MetaTrader5~=5.0.34
+plotly==5.3.1
