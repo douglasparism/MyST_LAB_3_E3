@@ -13,11 +13,10 @@ import sys
 import data as dt
 import datetime
 
-if sys.platform not in ["linux", "darwin"]:
-    data_ini_1 = dt.f_leer_archivo(param_estudiante=1, param_lib=True)
-else:
-    data_ini_1 = dt.f_leer_archivo(param_estudiante=1)
-
+#if sys.platform not in ["linux", "darwin"]:
+#    data_ini_1 = dt.f_leer_archivo(param_estudiante=1, param_lib=True)
+#else:
+data_ini_1 = dt.f_leer_archivo(param_estudiante=1)
 data_ini_2 = dt.f_leer_archivo(param_estudiante=2)
 data_ini_3 = dt.f_leer_archivo(param_estudiante=3)
 
@@ -29,7 +28,7 @@ data_dou = fn.f_columnas_pips(data_dou)
 parte_1_dou = fn.f_estadisticas_ba(data_dou)
 
 parte_2_1_dou = fn.f_evolucion_capital(cap_ini=100000, operaciones=data_dou.copy())
-final_dict = fn.f_be_de(data_dou)
+final_dict = fn.f_be_de(data_dou,local_exe = 'C:\\Program Files\\MetaTrader 5\\terminal64.exe')
 parte_2_2_dou = fn.f_estadisticas_mad(parte_2_1_dou, rf=0.05, benchmark_ticker="^GSPC")
 
 
@@ -64,13 +63,4 @@ unique_symbols = list(set(list(data_ini_1.loc[:, 'Symbol'].values) +
 
 act_credentials = dt.equipo(1, lib=True)
 
-historic_data = fn.get_mt5_prices(
-    act_credentials["local_exe"],
-    act_credentials["mt5_acc"],
-    act_credentials["mt5_inv_pas"],
-    unique_symbols,
-    datetime.datetime(2021, 9, 19, 0, 0),
-    datetime.datetime(2021, 10, 1, 0, 0)
-)
 
-print(historic_data)

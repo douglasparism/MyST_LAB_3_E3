@@ -543,7 +543,7 @@ def get_mt5_prices(symbols, start_time, end_time,
     return df_prices
 
 
-def f_be_de(param_data):
+def f_be_de(param_data,local_exe = 'C:\\Users\\DParis\\AppData\\Roaming\\XM Global MT5\\terminal64.exe'):
 
     winners = param_data.copy()[param_data.Profit > 0]
     winners = winners.reset_index(drop=True)
@@ -561,7 +561,7 @@ def f_be_de(param_data):
     occu_df = pd.concat(occu, ignore_index=True)
     prices_df = get_mt5_prices(symbols=occu_df.Symbol.tolist(),
                                start_time=occu_df.CTime_Anchor.min(),
-                               end_time=occu_df.CTime_Anchor.max())
+                               end_time=occu_df.CTime_Anchor.max(),local_exe=local_exe)
 
     prices_filtered = [prices_df[occu_df.Symbol[i]][prices_df[occu_df.Symbol[i]].time == occu_df.CTime_Anchor[i].replace(second=0)]["close"].values for i in occu_df.index]
     if len(prices_filtered)<1:
