@@ -55,6 +55,7 @@ parte_2_1_jp = fn.f_evolucion_capital(cap_ini=100000, operaciones=data_jp.copy()
 parte_2_2_jp = fn.f_estadisticas_mad(parte_2_1_jp, rf=0.05, benchmark_ticker="^GSPC")
 
 
+# PARTE 3
 # CARGAR PRECIOS HISTÓRICOS DE MT5
 unique_symbols = list(set(list(data_ini_1.loc[:, 'Symbol'].values) +
                       list(data_ini_2.loc[:, 'Symbol'].values) +
@@ -63,4 +64,6 @@ unique_symbols = list(set(list(data_ini_1.loc[:, 'Symbol'].values) +
 
 act_credentials = dt.equipo(1, lib=True)
 
-
+final_dict_dou = fn.f_be_de(data_dou)
+final_dict_ap = fn.f_be_de(data_ap)
+final_dict_jp = fn.f_be_de(data_jp)
