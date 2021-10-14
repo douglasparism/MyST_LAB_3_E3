@@ -11,6 +11,7 @@
 import plotly.express as px
 import pandas as pd
 from typing import Dict
+import numpy as np
 import plotly.graph_objects as go
 
 
@@ -55,6 +56,76 @@ def line_chart(
     return fig
 
 
-def bar_chart() -> px.bar:
-    fig = px.bar()
-    return fig
+def chart_behave(final_dict):
+    try:
+        df = final_dict["resultados"]["dataframe"]
+        x = ['status_quo', 'aversion_perdida', 'sensibilidad_decreciente']
+        sq_si = float(df.status_quo.values[0].strip("%"))/100*df.ocurrencias.values[0]
+        sq_no = df.ocurrencias.values[0] - sq_si
+        av_si = float(df.aversion_perdida.values[0].strip("%"))/100*df.ocurrencias.values[0]
+        av_no = df.ocurrencias.values[0] - av_si
+
+        keys_oc = [key for key in final_dict["ocurrencias"].keys()]
+        del keys_oc[0]
+        res = []
+        for occ in keys_oc:
+            cond1 = final_dict["ocurrencias"][occ]["operaciones"]["ganadoras"]["profit_ganadora"] > 0
+            cond2 = final_dict["ocurrencias"][occ]["operaciones"]["ganadoras"]["profit_ganadora"] > final_dict["ocurrencias"][keys_oc[0]]["operaciones"]["ganadoras"]["profit_ganadora"] and final_dict["ocurrencias"][occ]["operaciones"]["perdedoras"]["profit_perdedora"] > final_dict["ocurrencias"][keys_oc[0]]["operaciones"]["perdedoras"]["profit_perdedora"]
+            cond3 = final_dict["ocurrencias"][occ]["operaciones"]["perdedoras"]["profit_perdedora"] / final_dict["ocurrencias"][occ]["operaciones"]["ganadoras"]["profit_ganadora"] > 2
+            res.append((cond1 and cond2) or (cond3 and cond2) or (cond3 and cond1))
+        res = [1 if x == "True" else 0 for x in res]
+
+        dec_si = np.array(res).sum()
+        dec_no = df.ocurrencias.values[0] - dec_si
+
+        y1 = [sq_si, av_si, dec_si]
+        y2 = [sq_no, av_no, dec_no]
+
+        data = {'labels': x,
+                'Si': y1,
+                'No': y2
+                }
+
+        df_p = pd.DataFrame(data)
+
+        xcoord = [0,1,2]
+
+        annotations1 = [dict(
+                    x=xi-0.2,
+                    y=yi,
+                    text=str(yi),
+                    xanchor='auto',
+                    yanchor='bottom',
+                    showarrow=False,
+                ) for xi, yi in zip(xcoord, y1)]
+
+        annotations2 = [dict(
+                    x=xi+0.2,
+                    y=yi,
+                    text=str(yi),
+                    xanchor='auto',
+                    yanchor='bottom',
+                    showarrow=False,
+                ) for xi, yi in zip(xcoord, y2)]
+
+        annotations = annotations1 + annotations2
+
+        trace1 = go.Bar(
+            x=x,
+            y=y1,
+            name='Sí'
+        )
+        trace2 = go.Bar(
+            x=x,
+            y=y2,
+            name='No'
+        )
+        data = [trace1, trace2]
+        layout = go.Layout(
+            barmode='group',
+            annotations=annotations
+        )
+        fig = go.Figure(data=data, layout=layout)
+        return fig
+    except:
+        print("sin ocurrencias")
